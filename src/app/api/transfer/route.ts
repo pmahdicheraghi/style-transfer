@@ -11,13 +11,16 @@ export async function POST(request: Request) {
     const data = img.replace(/^data:image\/\w+;base64,/, "");
     const buf = Buffer.from(data, 'base64');
     const fileName = `${Date.now()}.png`
-    const inputPath = `public/images/input/${fileName}`
-    const outputPath = `public/images/output/${fileName}`
+    const inputPath = `./public/images/input/${fileName}`
+    const outputPath = `./public/images/output/${fileName}`
     fs.writeFileSync(inputPath, buf);
-
-    const { stdout, stderr } = await exec(`src\\modules\\deep-art-effect\\DeepArtEffectsCli.exe artfilter -input "${inputPath}" -output "${outputPath}" -stylename "${style}"`)
-
+    const { stdout, stderr } = await exec(`${process.platform === "linux" ?
+        "wine ./src/modules/deep-art-effect/DeepArtEffectsCli.exe" :
+        "src\\modules\\deep-art-effect\\DeepArtEffectsCli.exe"
+        } artfilter -input "${inputPath}" -output "${outputPath}" -stylename "${style}"`)
     const outImage = fs.readFileSync(outputPath, 'base64');
+    fs.unlinkSync(inputPath)
+    fs.unlinkSync(outputPath)
 
     return NextResponse.json({
         image: "data:image/png;base64," + outImage,
