@@ -2,6 +2,8 @@
 
 import { use, useCallback, useEffect, useRef, useState } from 'react'
 import Webcam from 'react-webcam';
+import { BsCameraFill } from "react-icons/bs"
+import { MdChangeCircle } from "react-icons/md"
 
 export default function Home() {
   const [data, setData] = useState<{ id: string; url: string, title: string }[]>()
@@ -16,6 +18,7 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setData(data)
+        setStyle(data[0].title)
       })
   }, [])
 
@@ -48,9 +51,9 @@ export default function Home() {
 
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-10 gap-10" >
-      <div className="flex flex-row items-center justify-between w-full gap-10">
-        {data && data.slice(3, 9).map((item, index) => (
+    <main className="flex min-h-screen flex-col p-5 gap-5 lg:p-10 lg:gap-10 items-center" >
+      <div className="flex flex-row items-center justify-between gap-10 overflow-x-auto w-full">
+        {data?.map((item, index) => (
           <div
             className={`flex flex-col items-center gap-2 border-2 ${style === item.title ? 'border-lime-300' : 'border-transparent'}`}
             key={index}
@@ -59,14 +62,15 @@ export default function Home() {
             <img
               src={item.url}
               alt={item.title}
+              className="max-w-[150px] w-[150px] h-[150px] object-cover"
             />
             <p>{item.title}</p>
           </div>
         ))}
       </div>
-      <div className="flex flex-row justify-between w-full gap-10">
+      <div className="flex flex-col justify-between w-full gap-5 lg:gap-10 lg:flex-row">
         <Webcam
-          className='w-1/2 border-2 border-lime-300'
+          className='border-2 border-lime-300 lg:w-1/2'
           mirrored
           audio={false}
           height={720}
@@ -79,7 +83,7 @@ export default function Home() {
             facingMode: "user"
           }}
         />
-        <div className="w-1/2 border-2 border-lime-300">
+        <div className="border-2 border-lime-300 aspect-video lg:w-1/2">
           {loading ? (
             <div className="flex flex-col items-center justify-center w-full h-full">
               <img src='/loading.svg' className='w-1/2' />
@@ -91,17 +95,18 @@ export default function Home() {
           }
         </div>
       </div>
-      <div className="flex flex-row items-center gap-5">
+      <div className="flex flex-row justify-center border-2 border-lime-300 rounded-full w-fit text-4xl">
         <button
-          className='border-2 border-lime-300 rounded p-2'
+          className='p-3 hover:text-lime-300'
           onClick={capture}>
-          {"ثبت عکس"}
+          <BsCameraFill />
         </button>
+        <div className="border-2 border-r border-lime-300" />
         <button
-          disabled={!image || !style}
-          className='border-2 border-lime-300 rounded p-2'
+          disabled={!image}
+          className={`p-3 ${!image ? "" : "hover:text-lime-300"}`}
           onClick={transfer}>
-          {"تبدیل عکس"}
+          <MdChangeCircle />
         </button>
       </div>
     </main >
