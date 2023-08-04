@@ -10,17 +10,14 @@ if (!apiKey) throw new Error('Missing Stability API key.')
 export async function POST(request: Request) {
     const res = await request.json()
     const img = res.image
-    const style = res.style
+    const prompt = res.prompt
 
     const formData = new FormData()
     formData.append('init_image', await (await fetch(img)).blob())
-    formData.append('init_image_mode', 'IMAGE_STRENGTH')
-    formData.append('image_strength', "0.30")
-    formData.append('text_prompts[0][text]', 'a 5 year old boy')
-    formData.append('style_preset', "photographic")
-    formData.append('cfg_scale', "7")
-    formData.append('samples', "1")
-    formData.append('steps', "30")
+    Object.entries(prompt).forEach(([key, value]) => {
+        formData.append(key, String(value))
+    })
+
     const response = await fetch(
         `${apiHost}/v1/generation/${engineId}/image-to-image`,
         {
@@ -44,7 +41,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
         image: "data:image/png;base64," + responseJSON.artifacts[0].base64,
-        style: style,
     })
 }
 

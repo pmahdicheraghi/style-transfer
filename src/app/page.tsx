@@ -5,9 +5,9 @@ import Webcam from 'react-webcam';
 import { BsCameraFill } from "react-icons/bs"
 import { MdChangeCircle } from "react-icons/md"
 
-function imageToDataUri(image: string, width: number, height: number, setImage: (image: string) => void) {// create an image
+function imageToDataUri(image: string, width: number, height: number, setImage: (image: string) => void) {
   const img = new Image();
-  img.src = image;
+  img.src = image
   
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -15,19 +15,19 @@ function imageToDataUri(image: string, width: number, height: number, setImage: 
   const context = canvas.getContext("2d");
 
   img.onload = function() {
-    const croppedWidth = 1280;
-    const croppedHeight = 720;
+    const croppedWidth = img.width;
+    const croppedHeight = img.height;
     context?.drawImage(img, -(croppedWidth - width) / 2, -(croppedHeight - height) / 2, croppedWidth, croppedHeight);
     setImage(canvas.toDataURL());
   };
 }
 
 export default function Home() {
-  const [data, setData] = useState<{ id: string; url: string, title: string }[]>()
+  const [data, setData] = useState<{ prompt: object; url: string, title: string }[]>()
+  const [styleIndex, setStyleIndex] = useState(0)
   const [result, setResult] = useState("")
   const [image, setImage] = useState("")
   const [loading, setLoading] = useState(false)
-  const [style, setStyle] = useState("")
   const webcamRef = useRef<Webcam>(null);
 
   useEffect(() => {
@@ -35,13 +35,11 @@ export default function Home() {
       .then((res) => res.json())
       .then((data) => {
         setData(data)
-        setStyle(data[0].title)
       })
   }, [])
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot() ?? "";
-    console.log(imageSrc);
     imageToDataUri(imageSrc, 1024, 1024, setImage)
     setResult("")
   }, [webcamRef])
@@ -55,7 +53,7 @@ export default function Home() {
       },
       body: JSON.stringify({
         image,
-        style
+        prompt: data?.[styleIndex].prompt
       })
     })
       .then((res) => res.json())
@@ -65,7 +63,7 @@ export default function Home() {
       .finally(() => {
         setLoading(false)
       })
-  }, [image, style])
+  }, [image, styleIndex])
 
 
   return (
@@ -73,9 +71,9 @@ export default function Home() {
       <div className="flex flex-row items-center justify-between gap-10 overflow-x-auto w-full">
         {data?.map((item, index) => (
           <div
-            className={`flex flex-col items-center gap-2 border-2 ${style === item.title ? 'border-lime-300' : 'border-transparent'}`}
+            className={`flex flex-col items-center gap-2 border-2 ${styleIndex === index ? 'border-lime-300' : 'border-transparent'}`}
             key={index}
-            onClick={() => setStyle(item.title)}
+            onClick={() => setStyleIndex(index)}
           >
             <img
               src={item.url}
