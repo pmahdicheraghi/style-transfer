@@ -5,6 +5,23 @@ import Webcam from 'react-webcam';
 import { BsCameraFill } from "react-icons/bs"
 import { MdChangeCircle } from "react-icons/md"
 
+function imageToDataUri(image: string, width: number, height: number, setImage: (image: string) => void) {// create an image
+  const img = new Image();
+  img.src = image;
+  
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext("2d");
+
+  img.onload = function() {
+    const croppedWidth = 1280;
+    const croppedHeight = 720;
+    context?.drawImage(img, -(croppedWidth - width) / 2, -(croppedHeight - height) / 2, croppedWidth, croppedHeight);
+    setImage(canvas.toDataURL());
+  };
+}
+
 export default function Home() {
   const [data, setData] = useState<{ id: string; url: string, title: string }[]>()
   const [result, setResult] = useState("")
@@ -24,13 +41,14 @@ export default function Home() {
 
   const capture = useCallback(() => {
     const imageSrc = webcamRef.current?.getScreenshot() ?? "";
-    setImage(imageSrc)
+    console.log(imageSrc);
+    imageToDataUri(imageSrc, 1024, 1024, setImage)
     setResult("")
   }, [webcamRef])
 
   const transfer = useCallback(() => {
     setLoading(true)
-    fetch('/api/transfer', {
+    fetch('/api/stability', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -70,20 +88,20 @@ export default function Home() {
       </div>
       <div className="flex flex-col justify-between w-full gap-5 lg:gap-10 lg:flex-row">
         <Webcam
-          className='border-2 border-lime-300 lg:w-1/2'
+          className='border-2 border-lime-300 lg:w-1/2 aspect-square'
           mirrored
           audio={false}
-          height={720}
           ref={webcamRef}
           screenshotFormat="image/png"
-          width={1280}
+          minScreenshotWidth={1280}
+          minScreenshotHeight={720}
           videoConstraints={{
             width: 1280,
             height: 720,
             facingMode: "user"
           }}
         />
-        <div className="border-2 border-lime-300 aspect-video lg:w-1/2">
+        <div className="border-2 border-lime-300 lg:w-1/2 aspect-square">
           {loading ? (
             <div className="flex flex-col items-center justify-center w-full h-full">
               <img src='/loading.svg' className='w-1/2' />
