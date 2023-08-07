@@ -5,55 +5,61 @@ import Webcam from 'react-webcam';
 import { BsCameraFill } from "react-icons/bs"
 import { MdChangeCircle } from "react-icons/md"
 
-function imageToDataUri(image: string, width: number, height: number, setImage: (image: string) => void) {
-  const img = new Image();
-  img.src = image
-  
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-
-  img.onload = function() {
-    const croppedWidth = img.width;
-    const croppedHeight = img.height;
-    context?.drawImage(img, -(croppedWidth - width) / 2, -(croppedHeight - height) / 2, croppedWidth, croppedHeight);
-    setImage(canvas.toDataURL());
-  };
-}
-
 export default function Home() {
-  const [data, setData] = useState<{ prompt: object; url: string, title: string }[]>()
+  const [transferData, setTransferData] = useState<{ id: object; url: string, title: string }[]>()
+  const [stabilityData, setStabilityData] = useState<{ prompt: object; url: string, title: string }[]>()
   const [styleIndex, setStyleIndex] = useState(0)
+  const [mode, setMode] = useState<"TRANSFER" | "STABILITY">("TRANSFER")
   const [result, setResult] = useState("")
   const [image, setImage] = useState("")
   const [loading, setLoading] = useState(false)
   const webcamRef = useRef<Webcam>(null);
 
   useEffect(() => {
-    fetch('/api/styles')
+    fetch('/api/transfer/styles')
       .then((res) => res.json())
       .then((data) => {
-        setData(data)
+        setTransferData(data)
+      })
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/stability/styles')
+      .then((res) => res.json())
+      .then((data) => {
+        setStabilityData(data)
       })
   }, [])
 
   const capture = useCallback(() => {
-    const imageSrc = webcamRef.current?.getScreenshot() ?? "";
-    imageToDataUri(imageSrc, 1024, 1024, setImage)
-    setResult("")
+    const img = new Image();
+    img.src = webcamRef.current?.getScreenshot() ?? "";
+
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
+    canvas.width = 1024;
+    canvas.height = 1024;
+
+    img.onload = function () {
+      const croppedWidth = img.width;
+      const croppedHeight = img.height;
+      context?.drawImage(img, -(croppedWidth - canvas.width) / 2, -(croppedHeight - canvas.height) / 2, croppedWidth, croppedHeight);
+      setImage(canvas.toDataURL());
+      setResult("")
+    };
   }, [webcamRef])
 
   const transfer = useCallback(() => {
     setLoading(true)
-    fetch('/api/stability', {
+    fetch(`/api/${mode === "STABILITY" ? 'stability' : 'transfer'}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         image,
-        prompt: data?.[styleIndex].prompt
+        style: mode === "TRANSFER" ? transferData?.[styleIndex].title : undefined,
+        prompt: mode === "STABILITY" ? stabilityData?.[styleIndex].prompt : undefined
       })
     })
       .then((res) => res.json())
@@ -69,11 +75,33 @@ export default function Home() {
   return (
     <main className="flex min-h-screen flex-col p-5 gap-5 lg:p-10 lg:gap-10 items-center" >
       <div className="flex flex-row items-center justify-between gap-10 overflow-x-auto w-full">
-        {data?.map((item, index) => (
+        {transferData?.map((item, index) => (
           <div
-            className={`flex flex-col items-center gap-2 border-2 ${styleIndex === index ? 'border-lime-300' : 'border-transparent'}`}
+            className={`flex flex-col items-center gap-2 border-2 ${(styleIndex === index && mode === "TRANSFER") ? 'border-lime-300' : 'border-transparent'}`}
             key={index}
-            onClick={() => setStyleIndex(index)}
+            onClick={() => {
+              setMode("TRANSFER");
+              setStyleIndex(index);
+            }}
+          >
+            <img
+              src={item.url}
+              alt={item.title}
+              className="max-w-[150px] w-[150px] h-[150px] object-cover"
+            />
+            <p>{item.title}</p>
+          </div>
+        ))}
+      </div>
+      <div className="flex flex-row items-center justify-between gap-10 overflow-x-auto w-full">
+        {stabilityData?.map((item, index) => (
+          <div
+            className={`flex flex-col items-center gap-2 border-2 ${styleIndex === index && mode === "STABILITY" ? 'border-lime-300' : 'border-transparent'}`}
+            key={index}
+            onClick={() => {
+              setMode("STABILITY");
+              return setStyleIndex(index);
+            }}
           >
             <img
               src={item.url}
